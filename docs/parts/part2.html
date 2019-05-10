@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+    <title>Exercise 2: Handle list-item click events</title>
+    <link rel="stylesheet" type="text/css" href="./res/styles/normalize.css">
+    <link rel="stylesheet" type="text/css" href="./res/styles/prettify.css" />
+    <link rel="stylesheet" type="text/css" href="./res/styles/styles.css">
+</head>
+
+<body>
+    <!-- Use the same title as the StartHere -->
+    <header>ListViews and Adapters in Android</header>
+
+   	<section id="main">
+
+		<h1 id="page-title"></h1>
+
+		<h2>Duration</h2>
+		<p>10 minutes</p>
+
+		<!-- - - - - - - - - Goals - - - - - - - - -->
+
+		<h2 id="goals">Lab goals</h2>
+		<p>
+			The goal here is to handle a list-item click event. Your response to the event will be to display
+			an alert dialog that indicates which item was clicked. You will need to use the information in
+			the event arguments passed to the event handler to determine the identity of the clicked item.
+		</p>
+		<p>
+			The images below show the how the application will look at the end of this exercise. On the left is the list of instructors. On the right is the same list after an item-click event; notice how the alert dialog shows the name of the instructor that was clicked.
+		</p>
+		<table class="indent-none">
+			<tr>
+				<td><img src="./res/images/Part1.Completed.png" /></td>
+				<td><img src="./res/images/Part2.CompletedAlert.png" /></td>
+			</tr>
+		</table>
+
+		<p>
+			Use the following high level steps to complete the exercise and refer to the complete step-by-step instructions below to provide any necessary
+			details you need or to check your code. There is also a completed version of the lab in the <strong>Exercise 2</strong> folder if you 
+			would like to compare your final solution.
+
+			<ol class="indent-medium">
+				
+				<li>
+					Subscribe to the <code>ItemClick</code> event on the instructor <code>ListView</code>.
+				</li>
+
+<p class="indent-none">
+<a href="#" onclick="toggleBlock(this, 'whatis_itemclick', 'What does ItemClick do?', 'Hide'); return false;" class="uiitem">What does ItemClick do?</a>
+<div class="indent-none wsblock" id="whatis_itemclick" style="display:none;">
+	<div class="wsitem">
+	<b>What does ItemClick do?</b>
+	<p>
+		The <code>ListView.ItemClick</code> event runs when the user clicks on a list item. Your callback event handler receives several event args, including both the id and position of the list item that was clicked. To learn about the underlying Android event, see <a href="http://developer.android.com/reference/android/widget/AdapterView.OnItemClickListener.html">AdapterView.OnItemClickListener</a>.
+	</p>
+	</div>
+</div>
+</p>
+
+				<li>
+					Use the <code>Position</code> property in the <code>EventArgs</code> to determine which instructor was clicked.
+				</li>
+
+				<li>
+					Use <code>AlertDialog.Builder</code> to display an alert containing the name of the clicked instructor.
+				</li>
+
+<p class="indent-none">
+<a href="#" onclick="toggleBlock(this, 'whatis_alertbuilder', 'How do I show an Alert?', 'Hide'); return false;" class="uiitem">How do I show an Alert?</a>
+<div class="indent-none wsblock" id="whatis_alertbuilder" style="display:none;">
+	<div class="wsitem">
+	<b>How do I show an Alert?</b>
+	<p>
+		The <code>AlertDialog.Builder</code> class is used to create an alert to display to the user. This is similar the the <code>MessageBox</code> or <code>UIAlertView</code> functionality found in Windows and iOS.
+	</p>
+<pre class="prettyprint codeblock">
+var dialog = new AlertDialog.Builder(this);
+dialog.SetMessage("My Message");
+dialog.SetNeutralButton("My Button Label", 
+  delegate
+  {
+    ...
+  });
+dialog.Show();
+</pre>
+	<p>
+		To learn more about dialogs, see <a href="http://developer.android.com/guide/topics/ui/dialogs.html">Dialogs</a>.
+	</p>
+	</div>
+</div>
+</p>
+
+			</ol>
+		</p>
+
+		<!-- - - - - - - - - Steps - - - - - - - - -->
+
+		<h1 id="steps">Steps</h1>
+		<p>
+			Below are the step-by-step instructions necessary to implement the exercise. It is recommended that you utilize these as an aid to completing the above high-level goals when necessary.
+		</p>
+
+		<h2>Handle the list-item click event</h2>
+
+		<ol>
+			<li>
+				Open <code>MainActivity.cs</code>.
+			</li>
+
+			<li>
+				Subscribe a handler to the <code>ItemClick</code> event of the instructor <code>ListView</code>.
+				<div class="hintblock">
+					<strong>Note:</strong> Make sure you subscribe to the <code>ItemClick</code> event so you will
+					respond when the user clicks on a specific item within the list.
+					The <code>ListView</code> class also has a <code>Click</code> event that is raised for clicks on the
+					list itself and not an item within the list. The <code>Click</code> event is inherited from a base
+					class and is not useful for a <code>ListView</code>; Android will throw a runtime exception if you
+					subscribe to it.
+				</div>
+			</li>
+
+			<li>
+				In your handler, retrieve the <code>Position</code> from the event args. Use the <code>Position</code>
+				to get the instructor object that corresponds to the item the user clicked.
+			</li>
+			
+			<li>
+				Create an alert dialog. Use the instructor's name as the alert message. Show the dialog to the user.
+			</li>
+
+			<li>
+				Run the app to test your work. Click on an instructor in the <code>ListView</code> and verify that the
+				alert dialog displays correctly.
+			</li>
+			<br>
+			<a href="#" onclick="toggleCode(this, 'click'); return false;" class="uiitem">Show Code</a>
+			<div id="click" style="display:none;">
+			<pre class="prettyprint">
+void OnItemClick(object sender, AdapterView.ItemClickEventArgs e)
+{
+   var instructor = InstructorData.Instructors[e.Position];
+
+   var dialog = new AlertDialog.Builder(this);
+   dialog.SetMessage(instructor.Name);
+   dialog.SetNeutralButton("OK", delegate { });
+   dialog.Show();
+}
+			</pre>
+			</div>
+			</p>
+
+		</ol>
+
+		<!-- - - - - - - - - Summary - - - - - - - - -->
+
+		<h1>Summary</h1>
+		<p>
+			Achieving the primary goal here required only a few lines of code: subscribe to the <code>ListView</code>'s <code>ItemClick</code> event and retrieve the identity of the clicked item from the event args. You could use this code as a base to construct a more realistic scenario. For example, you could build a master-details UI where your item-click handler navigated the app to a details Activity or Fragment.
+		</p>
+
+		<!-- - - - - - - - - Footer - - - - - - - - -->
+
+		<div class="align-right">
+			<a href="../index.html">Go Back</a>
+		</div>
+
+	</section>
+
+    <script src="./res/js/jquery.min.js"></script>
+    <script src="./res/js/prettify.js"></script>
+    <script src="./res/js/script.js"></script>
+
+    <footer>Copyright (C) 2018 Xamarin Inc., Microsoft.</footer>
+</body>
+</html>

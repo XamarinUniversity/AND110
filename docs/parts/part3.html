@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+    <title>Exercise 3: Implement a custom adapter</title>
+    <link rel="stylesheet" type="text/css" href="./res/styles/normalize.css">
+    <link rel="stylesheet" type="text/css" href="./res/styles/prettify.css" />
+    <link rel="stylesheet" type="text/css" href="./res/styles/styles.css">
+</head>
+
+<body>
+    <!-- Use the same title as the StartHere -->
+    <header>ListViews and Adapters in Android</header>
+
+   	<section id="main">
+
+		<h1 id="page-title"></h1>
+
+		<h2>Duration</h2>
+		<p>20 minutes</p>
+
+		<!-- - - - - - - - - Goals - - - - - - - - -->
+
+		<h2 id="goals">Lab goals</h2>
+		<p>
+			The primary goal of this lab is to code an adapter for your <code>ListView</code> to display the data. This exercise is a
+			continuation of the previous one; you can build on your previous codebase or use the provided solution to the previous
+			exercise as starter code for this one. 
+		</p>
+
+		<p>
+			In this exercise, you will see all the required steps to create a custom adapter, from the core operation of creating
+			and populating a row to the methods that <code>ListView</code> needs to get information about your data collection.
+		</p>
+
+		<p>
+			Writing your own adapter will let you display each Xamarin University instructor in a custom row layout.
+			You will be able to show their photo, name, and specialty in individual views within the row.
+			Use the following high level steps to complete the exercise and refer to the complete step-by-step instructions
+			below to provide any necessary details you need or to check your code.
+		</p>
+
+		<ol>
+			<li>
+				You will use a custom layout file containing a <code>RelativeLayout</code> with one <code>ImageView</code> and two <code>TextView</code>s.
+			</li>
+			<li>
+				You will write code to pull data out of your <code>Instructor</code> objects and load it into the views in the row; for example,
+				you will assign the instructor's name to the <code>Text</code> property of one of the <code>TextView</code>s. 
+			</li>
+		</ol>
+
+<p>
+<a href="#" onclick="toggleBlock(this, 'built-in-layout', 'Predefined Android layouts for a ListView', 'Hide'); return false;" class="uiitem">Predefined Android layouts for a ListView</a>
+<div class="wsblock" id="built-in-layout" style="display:none;">
+	<div class="wsitem">
+	<b>Predefined Android layouts for a ListView</b>
+	<p>
+		Android supplies a few predefined layout files that can be useful for simple apps where custom formatting is not a priority. Two classic examples are coding a prototype or displaying a list of strings. Each layout file has an id that you can use in your program to access it; for example, the layout file <strong>simple_list_item_1.xml</strong> has an id of <code>Android.Resource.Layout.SimpleListItem1</code>	in Xamarin.Android. For reference, the contents of the <strong>simple_list_item_1.xml</strong> file are shown below.
+	</p>
+<pre class="prettyprint codeblock">
+&lt;TextView
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  android:id="@android:id/text1"
+  android:layout_width="match_parent"
+  android:layout_height="wrap_content"
+  android:textappearance="?android:attr/textAppearanceListItemSmall"
+  android:gravity="center_vertical"
+  android:paddingstart="?android:attr/listPreferredItemPaddingStart"
+  android:paddingend="?android:attr/listPreferredItemPaddingEnd"
+  android:minheight="?android:attr/listPreferredItemHeightSmall" /&gt;
+</pre>
+	<p>
+		To explore other predefined layouts, see the <a href="https://github.com/android/platform_frameworks_base/tree/master/core/res/res/layout">Android source repository</a>. For a visual overview of the available layouts, see <a href="https://RobGibbens.com/androids-built-in-list-item-layouts/">Android's Built-in List Item Layouts</a>.
+	</p>
+	</div>
+</div>
+</p>		
+
+<p id="inflateLayout">
+<a href="#" onclick="toggleBlock(this, 'inflating_layout', 'How do I inflate a layout?', 'Hide'); return false;" class="uiitem">How do I inflate a layout?</a>
+<div class="wsblock" id="inflating_layout" style="display:none;">
+	<div class="wsitem">
+	<b>How do I inflate a layout?</b>
+	<p>
+		Android uses the term <em>inflate</em> for the act of instantiating a layout file and the views it contains. 
+		Inflation is done by the class <code>LayoutInflater</code> and its <code>Inflate</code> method. Layout inflaters
+		are tied to a context, so you do not create one directly; instead, you get one from your activity's
+		<code>LayoutInflater</code> property, by calling <code>GetSystemService</code> on a context, or by using
+		the <code>LayoutInflater.From</code> method. There are several overloads of <code>Inflate</code>, the most
+		general one useful for row layouts looks like this:
+	</p>
+<pre class="prettyprint codeblock">
+public virtual View Inflate(int resource, ViewGroup root, bool attachToRoot);
+</pre>
+	<p>
+		The first parameter is the id of the layout file you need to inflate. The second parameter is the <code>ViewGroup</code>
+		that will become the parent of the inflated layout - this is useful to let the newly inflated view inherit any layout
+		parameters on the parent (many times you can pass <code>null</code> for the <code>root</code> parameter and not notice
+		any difference). The third parameter indicates whether we want the inflator to attach the newly inflated view to the parent;
+		for list adapters we need to pass <code>false</code> for this parameter to avoid a runtime exception.
+	</p>
+
+	<p>
+		Below is code for a typical use of <code>Inflate</code> for list adapter. This code assumes that 
+		the <code>root</code> parameter passed to the adapter is named <code>parent</code>.
+	</p>
+<pre class="prettyprint codeblock">
+var inflater = LayoutInflater.From(parent.Context); // get an inflater from a Context
+View row = inflater.Inflate(Resource.Layout.MyRowLayout, parent, false);
+</pre>
+	<p>
+		To learn more about layout inflaters, see <a href="http://developer.android.com/reference/android/view/LayoutInflater.html">LayoutInflater</a>.
+	</p>
+	</div>
+</div>
+</p>		
+
+		<p>
+			The completed application is shown below.
+		</p>
+
+		<img src="./res/images/Part3.Completed.png" alt="- - - - - - - - - MISSING IMAGE - - - - - - - - - -" />
+
+		<h2>Required assets</h2>
+		<p>
+			The provided <strong>Exercise 3</strong> folder contains resources that you will need in order to complete the lab, please make sure you have this folder before you begin.
+
+			<ul class="indent-medium">
+				<li>
+					<strong>Assets/InstructorRow.axml</strong> contains a layout with views to display instructor data in a row.
+				</li>
+
+				<li>
+					The <strong>Assets/images</strong> folder contains instructor photos.
+				</li>
+			</ul>
+
+			There is also a completed version of the exercise you can use to check your work.
+		</p>
+
+		<!-- - - - - - - - - Steps - - - - - - - - -->
+
+		<h1 id="steps">Steps</h1>
+
+		<p>
+			Below are the step-by-step instructions to implement the exercise.
+		</p>
+
+		<h2>Add the starter code</h2>
+		<ol>
+			<li>
+				Add the provided <strong>images</strong> folder to the <strong>Assets</strong> folder in your project.
+				Examine the folder contents and note that it contains a photo for each instructor.
+				Check the <strong>Properties</strong> of one of the image files and verify its <strong>Build action</strong>
+				is set to <strong>AndroidAsset</strong> - this should have happened automatically when you added the folder
+				but it is worth checking now to avoid problems later when you access the images from code.
+			</li>
+
+			<li>
+				Add the provided layout file <strong>InstructorRow.axml</strong> to the <strong>Resources/layout</strong>
+				folder of the project. Open the file in the source-code editor. Notice that it has views for three of the
+				instructor properties: photo, name, and specialty. The main job of an adapter is to instantiate
+				(i.e. <em>inflate</em>) this layout file, lookup each of the views, and populate them with data from an
+				instructor object.
+			</li>
+		</ol>
+
+		<h2>Implement a custom adapter</h2>
+		<p>
+			You will need to write a class that inherits from <code>BaseAdapter&lt;Instructor&gt;</code> and overrides its four abstract methods.
+		</p>
+
+<p>
+<a href="#" onclick="toggleBlock(this, 'baseAdapter_methods', 'BaseAdapter Methods', 'Hide'); return false;" class="uiitem">BaseAdapter Methods</a>
+<div class="wsblock" id="baseAdapter_methods" style="display:none;">
+	<div class="wsitem">
+	<b>BaseAdapter Methods</b>
+	<p>
+		The <code>BaseAdapter&lt;T&gt;</code> class serves as the base class for many custom adapters. It is an abstract class that has the four methods you must override in your derived class.	Some of the methods are declared in base classes so you will need to navigate up the inheritance hierarchy if you are reading the documentation. The code below shows the methods you need to override to create a custom adapter. Each method has comments to describe its purpose.
+	</p>
+<pre class="prettyprint codeblock">
+public abstract class BaseAdapter&lt;T&gt; : BaseAdapter
+{
+  //
+  // Create a row. Populate the row with your data at 'position' 
+  // in your list. Return the new row.
+  //
+  public abstract View GetView(int position, View convertView, ViewGroup parent);
+
+  //
+  // Return the code-behind data object at the given position.
+  // The ListView class has a GetItemAtPosition method, when you call
+  // that method on the ListView, it calls this indexer on your adapter
+  // to get the code-behind object.
+  //
+  public abstract T this[int position] { get; }
+
+  //
+  // Number of items in your collection.
+  //
+  public abstract int Count { get; }
+
+  //
+  // Return the 'id' of the item at the given position.
+  // You decide on the ids you want to use, in simple cases you can use the
+  // item's position in the list as its id. The value you return here will be
+  // passed as part of the event args to click events so it needs to be
+  // something your code can use to locate the item.
+  //
+  public abstract long GetItemId(int position);
+
+  ...
+}
+</pre>
+	<p>
+		To learn more about <code>BaseAdapter&lt;T&gt;</code>, see <a href="http://androidapi.xamarin.com/?link=T%3aAndroid.Widget.BaseAdapter%3CT%3E">BaseAdapter</a>.
+	</p>
+	</div>
+</div>
+</p>			
+
+		<ol>
+			<li>
+				Add a new class named <code>InstructorAdapter</code> to the project.
+			</li>
+
+			<li>
+				Set the base class of <code>InstructorAdapter</code> to <code>BaseAdapter&lt;Instructor&gt;</code>.
+			</li>
+
+			<li>
+				Your adapter will need a reference to the collection of instructors. Add a constructor to your adapter class that
+				takes the collection as a parameter and stores it in a field. This code is simple but tedious; if you would like to, 
+				you can copy the code hidden behind the "Show Code" button below to save time.
+			</li>
+<p class="indent-none">
+<a href="#" onclick="toggleCode(this, 'adapterConstructor'); return false;" class="uiitem">Show Code</a>
+<div id="adapterConstructor" style="display:none;">
+<pre class="prettyprint">
+List&lt;Instructor&gt; instructors;
+
+public InstructorAdapter(List&lt;Instructor&gt; instructors)
+{
+  this.instructors = instructors;
+}
+</pre>
+</div>
+</p>
+
+			<li>
+				Override the indexer. It takes an integer position and returns the instructor at that position in the list.	The prototype is shown below.
+<pre class="prettyprint codeblock">
+public abstract T this[int position] { get; }
+</pre>
+			</li>
+
+			<li>
+				Override the <code>Count</code> property. It should return the number of instructors in the list.
+				The prototype is shown below.
+<pre class="prettyprint codeblock">
+public abstract int Count { get; }
+</pre>
+			</li>
+
+			<li>
+				Override the <code>GetItemId</code> method. Use the instructor's position in the list as its id
+				(this means you can just return the input argument as the result of this method).
+				The prototype is shown below.
+<pre class="prettyprint codeblock">
+public abstract long GetItemId(int position);
+</pre>
+			</li>
+
+			<li>
+				Override the <code>GetView</code> method. The prototype is shown below. 
+<pre class="prettyprint codeblock">
+public abstract View GetView(int position, View convertView, ViewGroup parent);
+</pre>
+				<ul class="indent-none" type="square">
+					<li>
+						Call <code>LayoutInflater.From(parent.Context)</code> to get an inflater.
+					</li>
+
+					<li>
+						Use the inflater to instantiate the <strong>InstructorRow.axml</strong> layout. 
+						Check the <a href="#inflateLayout">above hint for how to inflate a layout</a>.
+					</li>
+
+					<li>
+						Use <code>FindViewById</code> on the layout you just inflated to get references to the three contained views (the <code>ImageView</code> with id <code>photoImageView</code> and the two <code>TextView</code>s with ids <code>nameTextView</code> and <code>specialtyTextView</code>).
+					</li>
+
+					<li>
+						Use the <code>position</code> parameter to locate the instructor object you need to display; you can simply	use <code>position</code> as an index into your list of instructors.
+					</li>
+
+					<li>
+						Create a <code>Drawable</code> from the instructor's image: first retrieve the URL
+						of the image file from the instructor object.
+					</li>
+
+<p class="indent-none">
+<a href="#" onclick="toggleBlock(this, 'imageAssets', 'How do I load an Image Asset?', 'Hide'); return false;" class="uiitem">How do I load an Image Asset?</a>
+<div class="indent-none wsblock" id="imageAssets" style="display:none;">
+	<div class="wsitem">
+	<b>How do I load an Image Asset?</b>
+	<p>
+		Android <strong>Assets</strong> let you include arbitrary files into your app's <strong>.apk</strong> file and access them conveniently using <code>AssetManager</code> or the convenience property <code>Assets</code> from the <code>Activity</code> class. Android Resources are built on top of the Assets API - Assets are a lower-level API that give you access to your data as streams rather than typed objects.
+	</p>
+	<p>
+		The code below shows how to load an image <code>Drawable</code> from an asset.
+	</p>
+<pre class="prettyprint codeblock">
+string url = "images/myPhoto.jpg"; // path is relative to the project's Assets folder
+var drawable = Drawable.CreateFromStream(parent.Context.Assets.Open(url), null);
+</pre>
+	<p>
+		To learn more about Assets, see <a href="http://developer.xamarin.com/guides/android/application_fundamentals/resources_in_android/part_6_-_using_android_assets/">Using Android Assets</a>.
+	</p>
+	</div>
+</div>
+</p>
+
+					<li>
+						Use the <code>SetImageDrawable</code> method on the <code>ImageView</code> to load the instructor's photo.
+					</li>
+
+					<li>
+						Assign the instructor's name to the <code>Text</code> property of the <code>nameTextView</code>.
+					</li>
+
+					<li>
+						Assign the instructor's specialty to the <code>Text</code> property of the <code>specialtyTextView</code>.
+					</li>
+
+					<li>
+						Return the inflated and populated view from the method.
+					</li>
+				</ul>
+			</li>
+		</ol>
+
+<p>
+<a href="#" onclick="toggleCode(this, 'getView'); return false;" class="uiitem">Show Code</a>
+<div class="indent-medium" id="getView" style="display:none;">
+<pre class="prettyprint">
+public override View GetView(int position, View convertView, ViewGroup parent)
+{
+  var inflater = LayoutInflater.From(parent.Context);
+  var view = inflater.Inflate(Resource.Layout.InstructorRow, parent, false);
+
+  var photo     = view.FindViewById&lt;ImageView&gt;(Resource.Id.photoImageView);
+  var name      = view.FindViewById&lt;TextView&gt; (Resource.Id.nameTextView);
+  var specialty = view.FindViewById&lt;TextView&gt; (Resource.Id.specialtyTextView);
+
+  Stream   stream   = parent.Context.Assets.Open(instructors[position].ImageUrl);
+  Drawable drawable = Drawable.CreateFromStream(stream, null);
+  photo.SetImageDrawable(drawable);
+
+  name     .Text = instructors[position].Name;
+  specialty.Text = instructors[position].Specialty;
+
+  return view;
+}
+</pre>
+</div>
+</p>			
+
+		<h2>Use a custom adapter</h2>
+		<p>
+			Now that you have coded a custom adapter, you need to instantiate one and give it to your <code>ListView</code>.
+		</p>
+
+		<ol>
+			<li>
+				Open <strong>MainActivity.cs</strong>.
+			</li>
+
+			<li>
+				Comment out or remove the line of code that created the <code>ArrayAdapter</code>.
+			</li>
+
+			<li>
+				Instantiate an <code>InstructorAdapter</code> and assign it to the <code>Adapter</code> property of the <code>ListView</code>.
+			</li>
+
+			<li>
+				Run the app to test your work. You should see each instructor displayed in a custom row with their photo, name, and specialty.
+			</li>
+		</ol>
+
+<p>
+<a href="#" onclick="toggleCode(this, 'useAdapter'); return false;" class="uiitem">Show Code</a>
+<div class="indent-medium" id="useAdapter" style="display:none;">
+<pre class="prettyprint">
+instructorList.Adapter = new InstructorAdapter(InstructorData.Instructors);
+</pre>
+</div>
+</p>
+
+		<!-- - - - - - - - - Summary - - - - - - - - -->
+
+		<h1>Summary</h1>
+		In this lab, you created a custom adapter and used it with a <code>ListView</code>. This required more work than using the standard <code>ArrayAdapter</code> but gave you complete control over the row layout.
+
+		<div class="align-right">
+			<a href="../index.html">Go Back</a>
+		</div>
+	</section>
+
+    <script src="./res/js/jquery.min.js"></script>
+    <script src="./res/js/prettify.js"></script>
+    <script src="./res/js/script.js"></script>
+
+    <footer>Copyright (C) 2018 Xamarin Inc., Microsoft.</footer>
+</body>
+</html>
